@@ -10,40 +10,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Styles CSS personnalisés avec ajout des styles pour les prompts suggérés
+# Styles CSS personnalisés
 st.markdown("""
 <style>
     /* Styles existants */
     .main {
         background-color: #f0f7f4;
         padding: 2rem;
-    }
-    
-    .title-container {
-        background-color: #2c5282;
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-    
-    .main-title {
-        color: white;
-        font-size: 3rem;
-        font-weight: bold;
-        margin: 0;
-    }
-    
-    /* Styles pour les prompts suggérés */
-    .suggested-prompts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 20px 0;
-        padding: 20px;
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
     .prompt-chip {
@@ -55,16 +28,13 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s ease;
         font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+        margin: 5px;
     }
     
     .prompt-chip:hover {
         background-color: #2c5282;
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .prompt-section {
@@ -72,20 +42,7 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-    
-    .prompt-section h3 {
-        color: #2c5282;
-        margin-bottom: 15px;
-    }
-    
-    /* Autres styles existants */
-    .stChatMessage {...}
-    .user-message {...}
-    .assistant-message {...}
-    .stTextInput>div>div>input {...}
-    .stButton>button {...}
 </style>
 """, unsafe_allow_html=True)
 
@@ -131,16 +88,14 @@ def send_message_to_llm(session_id, message):
         return f"Error: {response.status_code} - {response.text}"
 
 def main():
-    # Titre stylisé
-    st.markdown('<div class="title-container"><h1 class="main-title">🐾 VeterinarIAn</h1></div>', unsafe_allow_html=True)
-
     # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "session_id" not in st.session_state:
         st.session_state.session_id = generate_session_id()
-    if "current_prompt" not in st.session_state:
-        st.session_state.current_prompt = ""
+
+    # Titre
+    st.title("🐾 VeterinarIAn")
 
     # Création de deux colonnes
     col1, col2 = st.columns([2, 1])
@@ -152,33 +107,40 @@ def main():
         with chat_container:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
-                    st.markdown(f'<div class="{message["role"]}-message">{message["content"]}</div>', 
-                              unsafe_allow_html=True)
+                    st.write(message["content"])
 
     with col2:
-        # Sidebar avec prompts suggérés
+        # Section des prompts suggérés
         st.markdown("### 💡 Questions suggérées")
         
         for category, prompts in SUGGESTED_PROMPTS.items():
-            st.markdown(f"#### {category}")
-            for prompt in prompts:
-                if st.button(prompt, key=f"prompt_{prompt}"):
-                    st.session_state.current_prompt = prompt
+            with st.expander(f"📍 {category}", expanded=True):
+                for prompt in prompts:
+                    if st.button(prompt, key=f"prompt_{prompt}", help="Cliquez pour utiliser cette question"):
+                        # Ajouter directement le message à l'historique
+                        st.session_state.messages.append({"role": "user", "content": prompt})
+                        with st.chat_message("user"):
+                            st.write(prompt)
+                        
+                        # Obtenir et afficher la réponse
+                        with st.spinner('VeterinarIAn réfléchit...'):
+                            llm_response = send_message_to_llm(st.session_state.session_id, prompt)
+                        
+                        st.session_state.messages.append({"role": "assistant", "content": llm_response})
+                        with st.chat_message("assistant"):
+                            st.write(llm_response)
+                        
+                        # Forcer le rafraîchissement de la page
+                        st.rerun()
 
-    # Zone de saisie avec le prompt sélectionné
-    user_input = st.chat_input(placeholder="Que voulez-vous apprendre aujourd'hui ?", 
-                              key="chat_input",
-                              value=st.session_state.current_prompt)
+    # Zone de saisie de texte
+    user_input = st.chat_input(placeholder="Posez votre question ici...")
 
     if user_input:
-        # Réinitialiser le prompt sélectionné
-        st.session_state.current_prompt = ""
-        
         # Ajouter le message utilisateur
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
-            st.markdown(f'<div class="user-message">{user_input}</div>', 
-                       unsafe_allow_html=True)
+            st.write(user_input)
 
         # Obtenir et afficher la réponse
         with st.spinner('VeterinarIAn réfléchit...'):
@@ -186,8 +148,7 @@ def main():
 
         st.session_state.messages.append({"role": "assistant", "content": llm_response})
         with st.chat_message("assistant"):
-            st.markdown(f'<div class="assistant-message">{llm_response}</div>', 
-                       unsafe_allow_html=True)
+            st.write(llm_response)
 
 if __name__ == "__main__":
     main()
