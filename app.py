@@ -50,7 +50,7 @@ st.markdown("""
 WEBHOOK_URL = "https://pitt-create.app.n8n.cloud/webhook/e985d15f-b2f6-456d-be15-97e0b1544a40/chat"
 BEARER_TOKEN = "Pittcreate82"
 
-# Définition des prompts suggérés par catégorie (modifiés pour être plus éducatifs)
+# Définition des prompts suggérés par catégorie
 SUGGESTED_PROMPTS = {
     "Anatomie et Physiologie": [
         "🧠 Expliquez le fonctionnement du système nerveux chez les chiens.",
@@ -97,7 +97,7 @@ def main():
         st.session_state.current_prompt = ""
 
     # Titre
-    st.title("🐾 VeterinarIAn - Assistant Éducatif Vétérinaire")
+    st.title("🐾 VeterinarIAn")
 
     # Création de deux colonnes
     col1, col2 = st.columns([2, 1])
@@ -111,6 +111,34 @@ def main():
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
 
+        # Affichage du prompt sélectionné
+        if st.session_state.current_prompt:
+            st.info(f"Prompt sélectionné : {st.session_state.current_prompt}")
+
+        # Zone de saisie de texte
+        user_input = st.chat_input(placeholder="Qu'allez vous apprendre aujourd'hui ?")
+
+        if user_input:
+            # Traitement du message utilisateur
+            full_input = user_input if not st.session_state.current_prompt else f"{st.session_state.current_prompt} {user_input}"
+            
+            # Ajouter le message utilisateur
+            st.session_state.messages.append({"role": "user", "content": full_input})
+            with st.chat_message("user"):
+                st.write(full_input)
+
+            # Obtenir et afficher la réponse
+            with st.spinner('VeterinarIAn réfléchit...'):
+                llm_response = send_message_to_llm(st.session_state.session_id, full_input)
+
+            st.session_state.messages.append({"role": "assistant", "content": llm_response})
+            with st.chat_message("assistant"):
+                st.write(llm_response)
+
+            # Réinitialiser le prompt courant
+            st.session_state.current_prompt = ""
+            st.rerun()
+
     with col2:
         # Section des prompts suggérés
         st.markdown("### 💡 Sujets d'apprentissage suggérés")
@@ -121,26 +149,6 @@ def main():
                     if st.button(prompt, key=f"prompt_{prompt}", help="Cliquez pour utiliser ce sujet d'apprentissage"):
                         st.session_state.current_prompt = prompt
                         st.rerun()
-
-    # Zone de saisie de texte
-    user_input = st.chat_input(placeholder="Posez votre question ici...", value=st.session_state.current_prompt)
-
-    if user_input:
-        # Réinitialiser le prompt courant
-        st.session_state.current_prompt = ""
-        
-        # Ajouter le message utilisateur
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.write(user_input)
-
-        # Obtenir et afficher la réponse
-        with st.spinner('VeterinarIAn réfléchit...'):
-            llm_response = send_message_to_llm(st.session_state.session_id, user_input)
-
-        st.session_state.messages.append({"role": "assistant", "content": llm_response})
-        with st.chat_message("assistant"):
-            st.write(llm_response)
 
 if __name__ == "__main__":
     main()
