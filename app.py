@@ -43,8 +43,8 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Style for text input */
-    .stTextInput>div>div>input {
+    /* Style for chat input */
+    .stChatInput>div>div>textarea {
         border-radius: 25px;
         padding: 10px 20px;
         border: 2px solid #2c5282;
@@ -133,28 +133,33 @@ def main():
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
 
-        # Zone de saisie de texte éditable
-        user_input = st.text_input("Modifiez ou posez votre question ici:", value=st.session_state.current_prompt)
+        # Affichage du prompt sélectionné
+        if st.session_state.current_prompt:
+            st.info(f"Prompt sélectionné : {st.session_state.current_prompt}")
 
-        # Bouton d'envoi
-        if st.button("Envoyer"):
-            if user_input:
-                # Ajouter le message utilisateur
-                st.session_state.messages.append({"role": "user", "content": user_input})
-                with st.chat_message("user"):
-                    st.write(user_input)
+        # Zone de saisie de texte
+        user_input = st.chat_input(placeholder="Modifiez ou posez votre question ici...")
 
-                # Obtenir et afficher la réponse
-                with st.spinner('VeterinarIAn réfléchit...'):
-                    llm_response = send_message_to_llm(st.session_state.session_id, user_input)
+        if user_input:
+            # Traitement du message utilisateur
+            full_input = user_input if not st.session_state.current_prompt else f"{st.session_state.current_prompt} {user_input}"
+            
+            # Ajouter le message utilisateur
+            st.session_state.messages.append({"role": "user", "content": full_input})
+            with st.chat_message("user"):
+                st.write(full_input)
 
-                st.session_state.messages.append({"role": "assistant", "content": llm_response})
-                with st.chat_message("assistant"):
-                    st.write(llm_response)
+            # Obtenir et afficher la réponse
+            with st.spinner('VeterinarIAn réfléchit...'):
+                llm_response = send_message_to_llm(st.session_state.session_id, full_input)
 
-                # Réinitialiser le prompt courant
-                st.session_state.current_prompt = ""
-                st.rerun()
+            st.session_state.messages.append({"role": "assistant", "content": llm_response})
+            with st.chat_message("assistant"):
+                st.write(llm_response)
+
+            # Réinitialiser le prompt courant
+            st.session_state.current_prompt = ""
+            st.rerun()
 
     with col2:
         # Section des prompts suggérés
