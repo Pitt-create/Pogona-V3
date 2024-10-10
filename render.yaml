@@ -1,0 +1,11 @@
+# render.yaml
+services:
+  - type: web
+    name: VeterinarIAn  # Remplacez par le nom de votre application
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py  # Remplacez app.py par le nom de votre fichier principal
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9
+    plan: free  # ou choisissez un autre plan selon vos besoins
