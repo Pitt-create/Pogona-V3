@@ -43,8 +43,27 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
+    /* Style for text input */
     .stTextInput>div>div>input {
-        background-color: #f0f7ff;
+        border-radius: 25px;
+        padding: 10px 20px;
+        border: 2px solid #2c5282;
+        background-color: white;
+    }
+    
+    /* Style for send button */
+    .stButton>button {
+        background-color: #2c5282;
+        color: white;
+        border-radius: 25px;
+        padding: 10px 30px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        background-color: #1a365d;
+        transform: translateY(-2px);
     }
 </style>
 """, unsafe_allow_html=True)
