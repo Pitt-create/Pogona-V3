@@ -43,12 +43,16 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Style for chat input */
-    .stChatInput>div>div>textarea {
+    /* Style for text area (simulating chat input) */
+    .stTextArea textarea {
         border-radius: 25px;
         padding: 10px 20px;
         border: 2px solid #2c5282;
         background-color: white;
+        font-size: 16px;
+        resize: none;
+        height: 50px !important;
+        overflow-y: hidden;
     }
     
     /* Style for send button */
@@ -64,6 +68,11 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #1a365d;
         transform: translateY(-2px);
+    }
+    
+    /* Hide fullscreen button on text area */
+    button[title="View fullscreen"] {
+        display: none;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -133,33 +142,28 @@ def main():
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
 
-        # Affichage du prompt sélectionné
-        if st.session_state.current_prompt:
-            st.info(f"Prompt sélectionné : {st.session_state.current_prompt}")
+        # Zone de saisie de texte éditable
+        user_input = st.text_area("Modifiez ou posez votre question ici:", value=st.session_state.current_prompt, key="chat_input", max_chars=1000)
 
-        # Zone de saisie de texte
-        user_input = st.chat_input(placeholder="Modifiez ou posez votre question ici...")
+        # Bouton d'envoi
+        if st.button("Envoyer"):
+            if user_input:
+                # Ajouter le message utilisateur
+                st.session_state.messages.append({"role": "user", "content": user_input})
+                with st.chat_message("user"):
+                    st.write(user_input)
 
-        if user_input:
-            # Traitement du message utilisateur
-            full_input = user_input if not st.session_state.current_prompt else f"{st.session_state.current_prompt} {user_input}"
-            
-            # Ajouter le message utilisateur
-            st.session_state.messages.append({"role": "user", "content": full_input})
-            with st.chat_message("user"):
-                st.write(full_input)
+                # Obtenir et afficher la réponse
+                with st.spinner('VeterinarIAn réfléchit...'):
+                    llm_response = send_message_to_llm(st.session_state.session_id, user_input)
 
-            # Obtenir et afficher la réponse
-            with st.spinner('VeterinarIAn réfléchit...'):
-                llm_response = send_message_to_llm(st.session_state.session_id, full_input)
+                st.session_state.messages.append({"role": "assistant", "content": llm_response})
+                with st.chat_message("assistant"):
+                    st.write(llm_response)
 
-            st.session_state.messages.append({"role": "assistant", "content": llm_response})
-            with st.chat_message("assistant"):
-                st.write(llm_response)
-
-            # Réinitialiser le prompt courant
-            st.session_state.current_prompt = ""
-            st.rerun()
+                # Réinitialiser le prompt courant
+                st.session_state.current_prompt = ""
+                st.rerun()
 
     with col2:
         # Section des prompts suggérés
