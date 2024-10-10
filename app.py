@@ -10,10 +10,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Styles CSS personnalisés (inchangés)
+# Styles CSS personnalisés
 st.markdown("""
 <style>
-    /* Styles existants */
     .main {
         background-color: #f0f7f4;
         padding: 2rem;
@@ -42,6 +41,10 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
+    }
+    
+    .stTextInput>div>div>input {
+        background-color: #f0f7ff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -97,7 +100,7 @@ def main():
         st.session_state.current_prompt = ""
 
     # Titre
-    st.title("🐾 VeterinarIAn")
+    st.title("🐾 VeterinarIAn - Assistant Éducatif Vétérinaire")
 
     # Création de deux colonnes
     col1, col2 = st.columns([2, 1])
@@ -111,33 +114,28 @@ def main():
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
 
-        # Affichage du prompt sélectionné
-        if st.session_state.current_prompt:
-            st.info(f"Prompt sélectionné : {st.session_state.current_prompt}")
+        # Zone de saisie de texte éditable
+        user_input = st.text_input("Modifiez ou posez votre question ici:", value=st.session_state.current_prompt)
 
-        # Zone de saisie de texte
-        user_input = st.chat_input(placeholder="Qu'allez vous apprendre aujourd'hui ?")
+        # Bouton d'envoi
+        if st.button("Envoyer"):
+            if user_input:
+                # Ajouter le message utilisateur
+                st.session_state.messages.append({"role": "user", "content": user_input})
+                with st.chat_message("user"):
+                    st.write(user_input)
 
-        if user_input:
-            # Traitement du message utilisateur
-            full_input = user_input if not st.session_state.current_prompt else f"{st.session_state.current_prompt} {user_input}"
-            
-            # Ajouter le message utilisateur
-            st.session_state.messages.append({"role": "user", "content": full_input})
-            with st.chat_message("user"):
-                st.write(full_input)
+                # Obtenir et afficher la réponse
+                with st.spinner('VeterinarIAn réfléchit...'):
+                    llm_response = send_message_to_llm(st.session_state.session_id, user_input)
 
-            # Obtenir et afficher la réponse
-            with st.spinner('VeterinarIAn réfléchit...'):
-                llm_response = send_message_to_llm(st.session_state.session_id, full_input)
+                st.session_state.messages.append({"role": "assistant", "content": llm_response})
+                with st.chat_message("assistant"):
+                    st.write(llm_response)
 
-            st.session_state.messages.append({"role": "assistant", "content": llm_response})
-            with st.chat_message("assistant"):
-                st.write(llm_response)
-
-            # Réinitialiser le prompt courant
-            st.session_state.current_prompt = ""
-            st.rerun()
+                # Réinitialiser le prompt courant
+                st.session_state.current_prompt = ""
+                st.rerun()
 
     with col2:
         # Section des prompts suggérés
